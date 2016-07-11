@@ -13,7 +13,12 @@ from threading import Thread
 Builder.load_file("kvirc.kv")
 
 class ChatScreen(Screen):
-	pass
+	chatView = ObjectProperty(None)
+	
+	def __init__(self,**kwargs):
+		super(ChatScreen, self).__init__(**kwargs)
+		self.chatView.bind(minimum_height=self.chatView.setter('height'))
+
 
 class IRCCat(irc.client.SimpleIRCClient):
     def __init__(self, target, gui):
@@ -26,22 +31,18 @@ class IRCCat(irc.client.SimpleIRCClient):
         if irc.client.is_channel(self.target):
             connection.join(self.target)
         else:
-            self.send_it()
-
-    def on_join(self, connection, event):
-        self.send_it()
+			pass
 
     def on_disconnect(self, connection, event):
-        sys.exit(0)
+		self.connection.quit("Using irc.client.py")
 
     def send_it(self):
-        while 1:
-            line = sys.stdin.readline().strip()
-            if not line:
-                break
-            self.connection.privmsg(self.target, line)
-            print line
-        self.connection.quit("Using irc.client.py")
+		while 1:
+			line = self.gui.chatScrn.ids.msgInp.text
+			if line == '':
+				break
+			self.connection.privmsg(self.target, line)
+			break
        
 class IrcApp(App):
 	sm = ScreenManager()
@@ -64,13 +65,16 @@ class IrcApp(App):
 		nick = self.chatScrn.ids.nickInp.text
 		target = self.chatScrn.ids.targetInp.text
 
-		c = IRCCat(target,self)
+		self.c = IRCCat(target,self)
 		try:
-			c.connect(server, port, nick)
+			self.c.connect(server, port, nick)
 		except irc.client.ServerConnectionError as x:
 			print(x)
 			sys.exit(0)
-		ircProcess = Thread(target=c.start,args=())
-		ircProcess.start()
-
+		self.ircProcess = Thread(target=self.c.start,args=())
+		self.ircProcess.start()
+		
+	def triggerMsg(self):
+		Thread(target=self.c.send_it,args=()).start()
+			
 IrcApp().run()

@@ -1,5 +1,8 @@
 <ChatScreen>:
 	name: 'Chat'
+	
+	chatView: chatView
+	
 	TabbedPanel:
 		do_default_tab: False
 		id: UItabs
@@ -35,11 +38,23 @@
 						on_press: app.startChat()
 						
 				GridLayout:
-					id: chatView
 					cols:1
 					size_hint:(.7,1)
-					row_force_default: True
-					row_default_height: 50
-					Label:
-						text:'chat'
+					ScrollView:
+						size_hint:(1,.7)
+						GridLayout:
+							cols: 1
+							id: chatView
+							size_hint_y: None
+							Label:
+								text: 'test'
+					BoxLayout:
+						orientation: 'vertical'
+						size_hint:(1,.3)
+						TextInput:
+							id: msgInp
+						Button:
+							text: 'Send'
+							on_press: app.triggerMsg()
+					
 			
