@@ -1,0 +1,45 @@
+<ChatScreen>:
+	name: 'Chat'
+	TabbedPanel:
+		do_default_tab: False
+		id: UItabs
+		TabbedPanelItem:
+			text: 'Home'
+			GridLayout:
+				cols:2
+				GridLayout:
+					cols:1
+					size_hint:(.3,1)
+					row_force_default: True
+					row_default_height: 50
+					Label:
+						text: 'config'
+					Label:
+						text: 'Server address.'
+					TextInput:
+						id: serverInp
+					Label:
+						text: 'Server\'s port. Default is 6667.'
+					TextInput:
+						id: portInp
+					Label:
+						text: 'Your nickname.'
+					TextInput:
+						id: nickInp
+					Label:
+						text: 'Target username or #channel.'
+					TextInput:
+						id: targetInp
+					Button:
+						text: 'CONNECT'
+						on_press: app.startChat()
+						
+				GridLayout:
+					id: chatView
+					cols:1
+					size_hint:(.7,1)
+					row_force_default: True
+					row_default_height: 50
+					Label:
+						text:'chat'
+			
