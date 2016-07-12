@@ -1,57 +1,67 @@
-import pickle
+import os
+import json
 
-SAVE_PATH = 'data/profiles.pkl'
+SAVE_PATH = 'data/profiles.json'
 
-def _generate_profile(description, nicks, network_data):
-	return {'description' : description, 'nicks' : nicks, 'networks' : [*network_data]}
+class Network(object):
+	def __init__(self, name, address, port, login_command=None):
+		self.name = name
+		self.address = address
+		self.port = port
+		self.login_command = login_command
+
+	def __repr__(self):
+		return self.name
+
+class Profile(object):
+	def __init__(self, name, description, nicks, networks):
+		self.name = name
+		self.description = description
+		self.nicks = nicks
+		self.networks = networks
+
+	def __repr__(self):
+		return self.name
 
 class ProfileHandler(object):
-	def __init__(self, path=SAVE_PATH):
-		self.profiles = {}
-		self.path = path
+	def __init__(self, save_path=SAVE_PATH):
+		self.save_path = save_path
+		self.profiles = []
 
-	def load(self):
-		try:
-			with open(self.path, 'rb') as pf:
-				self.profiles = pickle.load(pf)
-		except (FileNotFoundError, IOError):
-			pass #TODO: Common error handling
+		with open(self.save_path, 'r') as profiles_file:
+			profiles_data = json.loads(profiles_file.read())
+
+		for name in profiles_data.keys():
+			data = profiles_data[name]
+			self.new(name, data['description'], data['nicks'],
+				[Network(net, *data['networks'][net]) for net in data['networks'].keys()])
 
 	def save(self):
-		with open(self.path, 'wb') as pf:
-			pickle.dump(self.profiles, pf)
+		profiles_dict = {}
 
-	def new(self, name, description, nicks, network_data):
-		if name not in self.profiles.keys():
-			self.profiles[name] = _generate_profile(description, nicks, network_data)
-		else:
-			#TODO: more error handling
-			pass
+		for profile in self.all():
+			profiles_dict[profile.name] = {
+				'description' : profile.description,
+				'networks' : {},
+				'nicks' : profile.nicks
+			}
 
-	def get(self, name, field=None):
-		if field is None:
-			return self.profiles[name]
-		else:
-			return self.profiles[name][field]
+			for net in profile.networks:
+				profiles_dict[profile.name]['networks'][net.name] = [
+				net.address, net.port, net.login_command]
 
-	def edit(self, name, changed_data):
-		if name in self.profiles.keys():
-			keys = self.profiles[name].keys()
-			for key in changed_data.keys():
-				if key == 'name':
-					self.profiles[changed_data[key]] = self.profiles.pop(name)
-					name = changed_data[key]
-				else:
-					if key in keys:
-						self.profiles[name][key] = changed_data[key]
-		else:
-			#TODO
-			pass
+		with open(self.save_path, 'w') as profiles_file:
+			profiles_json = json.dumps(profiles_dict, indent=4)
+			profiles_file.write(profiles_json)			
 
+	def new(self, name, description, nicks, networks):
+		self.profiles.append(Profile(name, description, nicks, networks))
 
-profiles = ProfileHandler()
-profiles.new('Kevin', 'Friendly programmer ;)', ['Kebin', 'Kebby', 'Snibby'], [['Anonymous IRC', '192.168.1', '80', ['main', 'secret']]])
-print(profiles.get('Kevin', 'description'))
-profiles.edit('Kevin', {'name' : 'Kevum', 'description' : 'wanted by the FBI'})
-print(profiles.get('Kevum'))
-profiles.save()
+	def get(self, name):
+		for profile in self.profiles:
+			if profile.name == name:
+				return profile
+		return None
+
+	def all(self):
+		return self.profiles
