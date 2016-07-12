@@ -1,4 +1,3 @@
-import os
 import json
 
 SAVE_PATH = 'data/profiles.json'
