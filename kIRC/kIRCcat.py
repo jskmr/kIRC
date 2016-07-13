@@ -29,6 +29,11 @@ class chatTab(TabbedPanelItem):
 		super(chatTab, self).__init__(**kwargs)
 		self.chatView.bind(minimum_height=self.chatView.setter('height'))
 		self.text = title
+		self.c = None
+		
+	def triggerMsg(self):
+		e = Thread(target=self.c.send_it,args=())
+		e.start()
 
 class IRCCat(irc.client.SimpleIRCClient):
     def __init__(self, target, gui):
@@ -71,7 +76,7 @@ class IRCCat(irc.client.SimpleIRCClient):
        
 class IrcApp(App):
 	sm = ScreenManager()
-
+	cons = []
 	def build(self):
 		self.chatScrn = ChatScreen()
 		self.sm.add_widget(self.chatScrn)
@@ -87,21 +92,43 @@ class IrcApp(App):
 
 		nick = self.chatScrn.ids.nickInp.text
 		target = self.chatScrn.ids.targetInp.text
-
-		ircTab = chatTab(target)
 		
-		self.c = IRCCat(target,ircTab)
-		self.chatScrn.ids.UItabs.add_widget(ircTab)
+		iCons = 0
 		try:
-			self.c.connect(server, port, nick)
+			if self.cons:
+				for nets in self.cons:
+					if nets.connection.server == server and nets.connection.nickname == nick:
+						nets.connection.join(target) #need to join with an object that already has the con
+						ircTab = chatTab(target)		
+						ircTab.c = nets
+						self.chatScrn.ids.UItabs.add_widget(ircTab)
+						break
+					elif nets < len(self.cons):
+						iCons += 1
+						print iCons
+						continue
+					else:
+						ircTab = chatTab(target)
+						con = IRCCat(target,ircTab)
+						con.connect(server, port, nick)
+						self.cons.append(con)	
+						print self.cons	
+						ircTab.c = con
+						self.chatScrn.ids.UItabs.add_widget(ircTab)
+						Thread(target=con.start,args=()).start()
+						break
+			else:
+				ircTab = chatTab(target)		
+				con = IRCCat(target,ircTab)
+				con.connect(server, port, nick)
+				self.cons.append(con)	
+				print self.cons	
+				ircTab.c = con
+				self.chatScrn.ids.UItabs.add_widget(ircTab)
+				Thread(target=con.start,args=()).start()						
 		except irc.client.ServerConnectionError as x:
 			print(x)
-			sys.exit(0)
-		self.ircProcess = Thread(target=self.c.start,args=())
-		self.ircProcess.start()
-		
-	def triggerMsg(self):
-		e = Thread(target=self.c.send_it,args=())
-		e.start()
+			sys.exit(0)		
+
 		
 IrcApp().run()
