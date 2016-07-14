@@ -36,29 +36,29 @@ class chatTab(TabbedPanelItem):
 		e.start()
 
 class IRCCat(irc.client.SimpleIRCClient):
-    def __init__(self, target, gui):
-        irc.client.SimpleIRCClient.__init__(self)
-        self.target = target
-        self.gui = gui
+	def __init__(self, target, gui):
+		irc.client.SimpleIRCClient.__init__(self)
+		self.target = target
+		self.gui = gui
 
-    def on_welcome(self, connection, event):
-        if irc.client.is_channel(self.target):
-            connection.join(self.target)
-        else:
+	def on_welcome(self, connection, event):
+		if irc.client.is_channel(self.target):
+			connection.join(self.target)
+		else:
 			pass
 
-    def on_disconnect(self, connection, event):
+	def on_disconnect(self, connection, event):
 		self.connection.quit("Using irc.client.py")
 
-    def on_pubmsg(self, connection, event):
+	def on_pubmsg(self, connection, event):
 		msgBox = chatMsg()
-		msgBox.ids.senderLbl.text = event
+		msgBox.ids.senderLbl.text = event.source
 		#msgBox.ids.timeLbl
 		msgBox.ids.msgLbl.text = event.arguments[0]
 		self.gui.ids.chatView.add_widget(msgBox)
 		print event
 	
-    def on_privmsg(self, connection, event):
+	def on_privmsg(self, connection, event):
 		msgBox = chatMsg()
 		msgBox.ids.senderLbl.text = event.source
 		#msgBox.ids.timeLbl
@@ -66,14 +66,14 @@ class IRCCat(irc.client.SimpleIRCClient):
 		self.gui.ids.chatView.add_widget(msgBox)
 		print event
 
-    def send_it(self):
+	def send_it(self):
 		while 1:
 			line = self.gui.ids.msgInp.text
 			if line == '':
 				break
 			self.connection.privmsg(self.target, line)
 			break
-       
+	   
 class IrcApp(App):
 	sm = ScreenManager()
 	cons = []
