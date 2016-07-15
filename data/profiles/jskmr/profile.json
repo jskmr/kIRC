@@ -1,0 +1,19 @@
+{
+    "nicks": [
+        "jskmr",
+        "Kuma"
+    ],
+    "description": "insert description",
+    "networks": {
+        "Anonymous": [
+            "192.168.1.2",
+            "80",
+            null
+        ],
+        "NWO": [
+            "192.168.1.1",
+            "80",
+            "/msg NickServ $username $passwd"
+        ]
+    }
+}

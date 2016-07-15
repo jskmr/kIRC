@@ -1,7 +1,10 @@
 import json
+import os
+import os.path as path
 
-PROFILE_SAVE_PATH = 'data/profiles.json'
-IMAGE_SAVE_PATH = 'data/images/'
+PROFILES_PATH = 'data/profiles/'
+
+PROFILE_NAME_PATTERN = '^[a-z_][a-z\d_.,!]*$'
 
 class Network(object):
     def __init__(self, name, address, port, login_command=None):
@@ -14,56 +17,68 @@ class Network(object):
         return self.name
 
 class Profile(object):
-    def __init__(self, name, description, nicks, networks, image = None):
+    def __init__(self, name, description, nicks, networks, image_specified = False):
         self.name = name
+        self._original_name = self.name
         self.description = description
         self.nicks = nicks
         self.networks = networks
-        self.image = image
+        self.image_specified = image_specified
 
     def __repr__(self):
         return self.name
 
 class ProfileHandler(object):
-    def __init__(self, save_path=PROFILE_SAVE_PATH):
+    def __init__(self, save_path=PROFILES_PATH):
         self.save_path = save_path
         self.profiles = []
 
-        with open(self.save_path, 'r') as profiles_file:
-            profiles_data = json.loads(profiles_file.read())
+        for item in os.listdir(self.save_path):
+            profile_name = item
+            profile_path = path.join(self.save_path, item)
+            if path.isdir(profile_path):
+                with open(path.join(profile_path, 'profile.json')) as raw_profile_data:
+                    data = json.loads(raw_profile_data.read())
 
-        for name in profiles_data.keys():
-            data = profiles_data[name]
-            self.new(name, data['description'], data['nicks'],
-                [Network(net, *data['networks'][net]) for net in data['networks'].keys()])
+                    self.new(profile_name, data['description'], data['nicks'], [Network(
+                        net, *data['networks'][net]) for net in data['networks'].keys()],
+                        True if path.isfile(path.join(profile_path, 'img.png')) else False)
 
-    def save(self):
-        profiles_dict = {}
-
-        for profile in self.all():
-            profiles_dict[profile.name] = {
+    def save(self, *profiles):
+        for profile in (profiles if profiles else self.all()):
+            profile_data = {
                 'description' : profile.description,
                 'networks' : {},
-                'nicks' : profile.nicks,
-                'image' : profile.image
+                'nicks' : profile.nicks
             }
 
             for net in profile.networks:
-                profiles_dict[profile.name]['networks'][net.name] = [
+                profile_data['networks'][net.name] = [
                 net.address, net.port, net.login_command]
 
-        with open(self.save_path, 'w') as profiles_file:
-            profiles_json = json.dumps(profiles_dict, indent=4)
-            profiles_file.write(profiles_json)            
+            if profile.name != profile._original_name:
+                base = self.save_path
+                os.rename(path.join(base, profile._original_name), path.join(base, profile.name))
 
-    def new(self, name, description, nicks, networks):
-        self.profiles.append(Profile(name, description, nicks, networks))
+            profile_save_path = path.join(self.save_path, profile.name, 'profile.json')
+
+            with open(profile_save_path, 'w') as profile_file:
+                profile_json = json.dumps(profile_data, indent=4)
+                profile_file.write(profile_json)
+
+    def new(self, name, description, nicks, networks, image_specified):
+        self.profiles.append(Profile(name, description, nicks, networks, image_specified))
 
     def get(self, name):
         for profile in self.profiles:
-            if profile.name == name:
+            if profile.name.lower() == name.lower():
                 return profile
         return None
 
     def all(self):
         return self.profiles
+
+profiles = ProfileHandler()
+current = profiles.get('shabby')
+current.name = 'Shiburizu'
+profiles.save(current)
