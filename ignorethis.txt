@@ -1,3 +1,0 @@
-this file was created for the purposes of testing the Git discord bot
-another silly commit (:
-another silly commit for @@ ):

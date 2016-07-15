@@ -1,6 +1,7 @@
 import json
 
-SAVE_PATH = 'data/profiles.json'
+PROFILE_SAVE_PATH = 'data/profiles.json'
+IMAGE_SAVE_PATH = 'data/images/'
 
 class Network(object):
     def __init__(self, name, address, port, login_command=None):
@@ -13,17 +14,18 @@ class Network(object):
         return self.name
 
 class Profile(object):
-    def __init__(self, name, description, nicks, networks):
+    def __init__(self, name, description, nicks, networks, image = None):
         self.name = name
         self.description = description
         self.nicks = nicks
         self.networks = networks
+        self.image = image
 
     def __repr__(self):
         return self.name
 
 class ProfileHandler(object):
-    def __init__(self, save_path=SAVE_PATH):
+    def __init__(self, save_path=PROFILE_SAVE_PATH):
         self.save_path = save_path
         self.profiles = []
 
@@ -42,7 +44,8 @@ class ProfileHandler(object):
             profiles_dict[profile.name] = {
                 'description' : profile.description,
                 'networks' : {},
-                'nicks' : profile.nicks
+                'nicks' : profile.nicks,
+                'image' : profile.image
             }
 
             for net in profile.networks:

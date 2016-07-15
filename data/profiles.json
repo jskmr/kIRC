@@ -1,6 +1,7 @@
 {
     "Ojas" : {
     "description" : "insert description here",
+    "image" :null,
     "networks" : {
         "NWO" : ["192.168.1.1", "80", "/msg NickServ $username $passwd"],
         "Anonymous" : ["192.168.1.2", "80", null]
@@ -13,6 +14,7 @@
         "NWO" : ["192.168.1.1", "80", "/msg NickServ $username $passwd"],
         "Anonymous" : ["192.168.1.2", "80", null]
     },
-    "nicks" : ["shibby"]
+    "nicks" : ["shibby"],
+    "image" : null
     }
 }
