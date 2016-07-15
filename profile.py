@@ -77,8 +77,3 @@ class ProfileHandler(object):
 
     def all(self):
         return self.profiles
-
-profiles = ProfileHandler()
-current = profiles.get('shabby')
-current.name = 'Shiburizu'
-profiles.save(current)
