@@ -25,54 +25,80 @@ class chatMsg(GridLayout):
 class chatTab(TabbedPanelItem):
     chatView = ObjectProperty(None)
     
-    def __init__(self,title,**kwargs):
+    def __init__(self,title,address,**kwargs):
         super(chatTab, self).__init__(**kwargs)
         self.chatView.bind(minimum_height=self.chatView.setter('height'))
         self.text = title
         self.c = None
+        self.id = str(title+address)
         
     def triggerMsg(self):
-        e = Thread(target=self.c.send_it,args=())
+        e = Thread(target=self.c.send_it,args=(self.text,self.ids.msgInp.text))
         e.start()
 
 class IRCCat(irc.client.SimpleIRCClient):
-    def __init__(self, target, gui):
+    def __init__(self,target):
         irc.client.SimpleIRCClient.__init__(self)
         self.target = target
-        self.gui = gui
 
     def on_welcome(self, connection, event):
         if irc.client.is_channel(self.target):
             connection.join(self.target)
         else:
-            pass
+            pass #destroy tab
 
     def on_disconnect(self, connection, event):
         self.connection.quit("Using irc.client.py")
 
     def on_pubmsg(self, connection, event):
         msgBox = chatMsg()
-        msgBox.ids.senderLbl.text = event
+        msgBox.ids.senderLbl.text = event.source
         #msgBox.ids.timeLbl
         msgBox.ids.msgLbl.text = event.arguments[0]
-        self.gui.ids.chatView.add_widget(msgBox)
-        print(event)
+        for i in kIRC.chatScrn.ids.UItabs.tab_list:
+            if i.id == str(event.target + connection.server):
+                i.chatView.add_widget(msgBox)
+                break
     
     def on_privmsg(self, connection, event):
         msgBox = chatMsg()
         msgBox.ids.senderLbl.text = event.source
         #msgBox.ids.timeLbl
         msgBox.ids.msgLbl.text = event.arguments[0]
-        self.gui.ids.chatView.add_widget(msgBox)
-        print(event)
+        
+        iTabs = 0
+        
+        if kIRC.chatScrn.ids.UItabs.tab_list:
+            for i in kIRC.chatScrn.ids.UItabs.tab_list:
+                if i.id == str(irc.client.NickMask(event.source).nick + connection.server):
+                    i.chatView.add_widget(msgBox)
+                    break
+                elif i < len(kIRC.chatScrn.ids.UItabs.tab_list):
+                    iTabs += 1
+                    print(iTabs)
+                    continue
+                else:
+                    self.connection.join(event.target) 
+                    ircTab = chatTab(irc.client.NickMask(event.source).nick,connection.server)        
+                    ircTab.c = self
+                    ircTab.chatView.add_widget(msgBox)
+                    kIRC.chatScrn.ids.UItabs.add_widget(ircTab)
+                    break
+        else:
+            self.connection.join(event.target) 
+            ircTab = chatTab(irc.client.NickMask(event.source),connection.server)        
+            ircTab.c = self
+            ircTab.chatView.add_widget(msgBox)
+            kIRC.chatScrn.ids.UItabs.add_widget(ircTab)
 
-    def send_it(self):
+
+    def send_it(self,recep,msg):
         while 1:
-            line = self.gui.ids.msgInp.text
-            if line == '':
+            if msg == '':
                 break
-            self.connection.privmsg(self.target, line)
-            break
+            else:
+                self.connection.privmsg(recep, msg)
+                break
        
 class IrcApp(App):
     sm = ScreenManager()
@@ -98,18 +124,25 @@ class IrcApp(App):
             if self.cons:
                 for nets in self.cons:
                     if nets.connection.server == server and nets.connection.nickname == nick:
-                        nets.connection.join(target) #need to join with an object that already has the con
-                        ircTab = chatTab(target)        
+                        nets.connection.join(target) 
+                        ircTab = chatTab(target,server)        
                         ircTab.c = nets
-                        self.chatScrn.ids.UItabs.add_widget(ircTab)
+                        print(str(target+server))
+                        for tabs in self.chatScrn.ids.UItabs.tab_list:
+                            if tabs.id == str(target+server):
+                                pass
+                            else:
+                                self.chatScrn.ids.UItabs.add_widget(ircTab)
+                                print(tabs.id)
+                                break
                         break
                     elif nets < len(self.cons):
                         iCons += 1
                         print(iCons)
                         continue
                     else:
-                        ircTab = chatTab(target)
-                        con = IRCCat(target,ircTab)
+                        ircTab = chatTab(target,server)
+                        con = IRCCat(target)
                         con.connect(server, port, nick)
                         self.cons.append(con)    
                         print(self.cons)    
@@ -118,8 +151,8 @@ class IrcApp(App):
                         Thread(target=con.start,args=()).start()
                         break
             else:
-                ircTab = chatTab(target)        
-                con = IRCCat(target,ircTab)
+                ircTab = chatTab(target,server)        
+                con = IRCCat(target)
                 con.connect(server, port, nick)
                 self.cons.append(con)    
                 print(self.cons)    
@@ -128,7 +161,12 @@ class IrcApp(App):
                 Thread(target=con.start,args=()).start()                        
         except irc.client.ServerConnectionError as x:
             print(x)
-            sys.exit(0)        
+            sys.exit(0)
+        
+        def on_close(self):
+            for i in self.cons:
+                i.connection.quit("kIRC - look for me on github.")      
 
         
-IrcApp().run()
+kIRC = IrcApp()
+kIRC.run()
