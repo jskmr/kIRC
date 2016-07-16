@@ -147,44 +147,30 @@ class IrcApp(App):
             port = 6667
 
         nick = self.chatScrn.ids.nickInp.text
-        target = self.chatScrn.ids.targetInp.text
+        target = self.chatScrn.ids.targetInp.text   
         
-        iCons = 1
-        try: 
-            if self.cons != []: #switch to enumerate to remove iCons
-                for nets in self.cons:
-                    if nets.connection.server == server and nets.connection.nickname == nick:
-                        for i in self.chatScrn.ids.UItabs.tab_list:
-                            if str(i.id) == str(target+server):
-                                break
-                            elif str(i.id) == None:
-                                continue
-                            else:
-                                nets.connection.join(target) 
-                                ircTab = chatTab(target,server)        
-                                ircTab.c = nets
-                                self.chatScrn.ids.UItabs.add_widget(ircTab)
-                                break
-                        break
-                    elif iCons >= len(self.cons):
-                        ircTab = chatTab(target,server)
-                        con = IRCCat(target)
-                        con.connect(server, port, nick)
-                        self.cons.append(con)    
-                        ircTab.c = con
-                        self.chatScrn.ids.UItabs.add_widget(ircTab)
-                        Thread(target=con.start,args=()).start()
-                        break
-                    else:
-                        iCons += 1
-            else:
-                ircTab = chatTab(target,server)        
-                con = IRCCat(target)
-                con.connect(server, port, nick)
-                self.cons.append(con)    
-                ircTab.c = con
-                self.chatScrn.ids.UItabs.add_widget(ircTab)
-                Thread(target=con.start,args=()).start()                        
+        existingCon = next((i for i in self.cons if i.connection.server == server and i.connection.nickname == nick), None)
+        try:
+			if existingCon != None:
+				for i in self.chatScrn.ids.UItabs.tab_list:
+					if str(i.id) == str(target+server):
+						break
+					elif str(i.id) == None:
+						continue
+					else:
+						existingCon.connection.join(target) 
+						ircTab = chatTab(target,server)        
+						ircTab.c = existingCon
+						self.chatScrn.ids.UItabs.add_widget(ircTab)
+						break           
+			else:
+				ircTab = chatTab(target,server)        
+				con = IRCCat(target)
+				con.connect(server, port, nick)
+				self.cons.append(con)    
+				ircTab.c = con
+				self.chatScrn.ids.UItabs.add_widget(ircTab)
+				Thread(target=con.start,args=()).start()
         except irc.client.ServerConnectionError as x:
             print(x)
             sys.exit(0)
