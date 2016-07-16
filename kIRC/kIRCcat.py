@@ -60,6 +60,36 @@ class IRCCat(irc.client.SimpleIRCClient):
                 i.chatView.add_widget(msgBox)
                 break
     
+    def on_action(self, connection, event):
+        msgBox = chatMsg()
+        msgBox.ids.senderLbl.text = event.source
+        #msgBox.ids.timeLbl
+        msgBox.ids.msgLbl.text = event.arguments[0]
+        msgBox.ids.msgLbl.italic = True
+        
+        iTabs = 0
+        
+        if irc.client.is_channel(event.target):
+			for i in kIRC.chatScrn.ids.UItabs.tab_list:
+				if i.id == str(event.target + connection.server):
+					i.chatView.add_widget(msgBox)
+					break
+        
+        elif kIRC.chatScrn.ids.UItabs.tab_list:
+            for i in kIRC.chatScrn.ids.UItabs.tab_list:
+                if i.id == str(irc.client.NickMask(event.source).nick + connection.server):
+                    i.chatView.add_widget(msgBox)
+                    break
+                elif i < len(kIRC.chatScrn.ids.UItabs.tab_list):
+                    iTabs += 1
+                    print(iTabs)
+                    continue
+                else:
+                    self.addTab(connection, event, msgBox)
+                    break
+        else:
+            self.addTab(connection, event, msgBox)
+    
     def on_privmsg(self, connection, event):
         msgBox = chatMsg()
         msgBox.ids.senderLbl.text = event.source
@@ -78,18 +108,17 @@ class IRCCat(irc.client.SimpleIRCClient):
                     print(iTabs)
                     continue
                 else:
-                    self.connection.join(event.target) 
-                    ircTab = chatTab(irc.client.NickMask(event.source).nick,connection.server)        
-                    ircTab.c = self
-                    ircTab.chatView.add_widget(msgBox)
-                    kIRC.chatScrn.ids.UItabs.add_widget(ircTab)
+                    self.addTab(connection, event, msgBox)
                     break
         else:
-            self.connection.join(event.target) 
-            ircTab = chatTab(irc.client.NickMask(event.source),connection.server)        
-            ircTab.c = self
-            ircTab.chatView.add_widget(msgBox)
-            kIRC.chatScrn.ids.UItabs.add_widget(ircTab)
+            addTab(connection, event)
+
+    def addTab(self, connection, event, obj):
+        self.connection.join(event.target) 
+        ircTab = chatTab(irc.client.NickMask(event.source).nick,connection.server)        
+        ircTab.c = self
+        ircTab.chatView.add_widget(obj)
+        kIRC.chatScrn.ids.UItabs.add_widget(ircTab)
 
 
     def send_it(self,recep,msg):
