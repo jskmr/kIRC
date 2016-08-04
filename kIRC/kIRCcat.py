@@ -31,7 +31,6 @@ class chatTab(TabbedPanelItem):
         self.text = target
         self.c = None
         self.id = str(target+server)
-        print("CONFIRM" + str(self.id))
 
     def triggerMsg(self):
         e = Thread(target=self.c.send_it,args=(self.text,self.ids.msgInp.text))
@@ -47,9 +46,6 @@ class IRCCat(irc.client.SimpleIRCClient):
             connection.join(self.target)
         else:
             pass #destroy tab
-
-    def on_disconnect(self, connection, event):
-        self.connection.quit("Using irc.client.py")
 
     def on_pubmsg(self, connection, event):
         msgBox = chatMsg()
@@ -151,34 +147,37 @@ class IrcApp(App):
         
         existingCon = next((i for i in self.cons if i.connection.server == server and i.connection.nickname == nick), None)
         try:
-			if existingCon != None:
-				for i in self.chatScrn.ids.UItabs.tab_list:
-					if str(i.id) == str(target+server):
-						break
-					elif str(i.id) == None:
-						continue
-					else:
-						existingCon.connection.join(target) 
-						ircTab = chatTab(target,server)        
-						ircTab.c = existingCon
-						self.chatScrn.ids.UItabs.add_widget(ircTab)
-						break           
-			else:
-				ircTab = chatTab(target,server)        
-				con = IRCCat(target)
-				con.connect(server, port, nick)
-				self.cons.append(con)    
-				ircTab.c = con
-				self.chatScrn.ids.UItabs.add_widget(ircTab)
-				Thread(target=con.start,args=()).start()
+            if existingCon != None:
+                for i in self.chatScrn.ids.UItabs.tab_list:
+                    if str(i.id) == str(target+server):
+                        break
+                    elif str(i.id) == None:
+                        continue
+                    else:
+                        existingCon.connection.join(target) 
+                        ircTab = chatTab(target,server)        
+                        ircTab.c = existingCon
+                        self.chatScrn.ids.UItabs.add_widget(ircTab)
+                        break           
+            else:
+                ircTab = chatTab(target,server)        
+                con = IRCCat(target)
+                con.connect(server, port, nick)
+                self.cons.append(con)    
+                ircTab.c = con
+                self.chatScrn.ids.UItabs.add_widget(ircTab)
+                Thread(target=con.start,args=()).start()
         except irc.client.ServerConnectionError as x:
             print(x)
             sys.exit(0)
         
-        def on_close(self):
-            for i in self.cons:
-                i.connection.quit("kIRC - look for me on github.")      
-
+    def on_stop(self):
+        for i in self.cons:
+            try:
+                i.connection.disconnect(message="kIRC") #not sending quit msg?
+            except:
+                pass      
+        sys.exit(0)
         
 kIRC = IrcApp()
 kIRC.run()
